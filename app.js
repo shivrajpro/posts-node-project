@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const feedRoutes = require('./routes/feed');
+const { default: mongoose } = require('mongoose');
 
 const app = express();
 
@@ -17,4 +18,8 @@ app.use((req, res, next) => {
 
 app.use('/feed', feedRoutes);
 
-app.listen(8080);
+mongoose.connect('mongodb+srv://shivraj:shiv@cluster0.bu9ow60.mongodb.net/posts')
+.then(result=>{
+    console.log('CONNECTED');
+    app.listen(8080);
+}).catch(e=> console.log(e))
