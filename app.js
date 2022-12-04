@@ -23,7 +23,8 @@ const fileStorage = multer.diskStorage({
       //folder name in which images will be stored and the same will be included to add the images in DB
     },
     filename: (req, file, cb) => {
-      cb(null, uuidv4());
+      // cb(null, uuidv4());
+      cb(null, (Date.now() + "-" + file.originalname));
     }
 });
 // app.use(bodyParser.urlencoded()); // x-www-form-urlencoded <form>
