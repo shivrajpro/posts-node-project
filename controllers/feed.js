@@ -4,9 +4,24 @@ const fs = require('fs');
 const path = require('path');
 
 exports.getPosts = (req, res, next) => {
-  Post.find()
+  const currentPage = req.query.page || 1;
+  const ITEMS_PER_PAGE = 2;
+  let totalItems;
+
+  Post.find().countDocuments()
+  .then(count=>{
+    totalItems = count;
+
+    return Post.find()
+    .skip((currentPage - 1) * ITEMS_PER_PAGE)
+    .limit(ITEMS_PER_PAGE);
+  })
   .then(posts=>{
-    res.status(200).json({message:'Fetched posts successfully', posts});
+    res.status(200).json({
+      message:'Fetched posts successfully', 
+      posts,
+      totalItems
+    });
   })
   .catch(e=>{
     if(!e) e.statusCode = 500;
