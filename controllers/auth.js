@@ -72,6 +72,7 @@ exports.login = (req, res, next)=>{
       res.status(200).json({token, userId: loadedUser._id.toString()});
   })
   .catch(e=>{
-    console.log(e);
+    // console.log(e);
+    next(e)
   })
 }

@@ -128,6 +128,12 @@ exports.updatePost = (req,res,next)=>{
       throw error;  
     }
 
+    if(post.creator.toString() !== req.userId){
+      const error = new Error('Unauthorized');
+      error.statusCode = 422;
+      throw error;  
+    }
+
     if(imageUrl !== post.imageUrl){
       clearImage(post.imageUrl);//delete the old image
     }
@@ -158,8 +164,21 @@ exports.deletePost = (req, res, next)=>{
       error.statusCode = 422;
       throw error;  
     }
+   
+    if(post.creator.toString() !== req.userId){
+      const error = new Error('Unauthorized');
+      error.statusCode = 422;
+      throw error;  
+    }
     
     return Post.findByIdAndRemove(postId);
+  })
+  .then(result=>{
+    return User.findById(req.userId);
+  })
+  .then(user=>{
+    user.posts.pull(postId);
+    return user.save();
   })
   .then(result=>{
     res.status(200).json({message:"Post deleted successfully!"});
