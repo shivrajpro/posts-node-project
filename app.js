@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const multer = require("multer");
 
 const feedRoutes = require('./routes/feed');
+const authRoutes = require('./routes/auth');
+
 const mongoose = require('mongoose');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -40,11 +42,14 @@ app.use((req, res, next) => {
 
 app.use(multer({storage: fileStorage, fileFilter}).single('image'));
 app.use('/feed', feedRoutes);
+app.use('/auth', authRoutes);
+
 app.use((err, req, res, next)=>{
     console.log(err);
     const status = err.statusCode || 500;
     const message = err.message;
-    res.status(status).json({message});
+    const data = err.data;
+    res.status(status).json({message, data});
 })
 
 mongoose.connect('mongodb+srv://shivraj:shiv@cluster0.bu9ow60.mongodb.net/posts')
