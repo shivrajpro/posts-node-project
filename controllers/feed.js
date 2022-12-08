@@ -4,33 +4,29 @@ const fs = require('fs');
 const path = require('path');
 const User = require('../models/user');
 
-exports.getPosts = (req, res, next) => {
+exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
   const ITEMS_PER_PAGE = 2;
-  let totalItems;
 
-  Post.find().countDocuments()
-  .then(count=>{
-    totalItems = count;
-
-    return Post.find()
+  try {
+    const totalItems = await Post.find().countDocuments()
+    const posts = await Post.find().populate('creator')
     .skip((currentPage - 1) * ITEMS_PER_PAGE)
     .limit(ITEMS_PER_PAGE);
-  })
-  .then(posts=>{
+  
     res.status(200).json({
       message:'Fetched posts successfully', 
       posts,
       totalItems
     });
-  })
-  .catch(e=>{
+      
+  } catch (e) {
     if(!e) e.statusCode = 500;
     next(e);  
-  });
+  }
 };
 
-exports.createPost = (req, res, next) => {
+exports.createPost = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const error = new Error('Validation failed, entered data is incorrect');
@@ -46,7 +42,6 @@ exports.createPost = (req, res, next) => {
   const imageUrl = req.file.path.replace("\\" ,"/");
   const title = req.body.title;
   const content = req.body.content;
-  let creator;
   // console.log('IMAGE URL',imageUrl);
   const post = new Post({
     title: title, 
@@ -56,28 +51,21 @@ exports.createPost = (req, res, next) => {
   });
   // Create post in db
 
-  post.save()
-  .then(result=>{
-    return User.findById(req.userId);
-  })
-  .then(user=>{
-    creator = user;
-    user.posts.push(post);
-
-    return user.save();
-  })
-  .then(result=>{
+  try {
+    const result = await post.save();
+    const creator = await User.findById(req.userId);
+  
+    creator.posts.push(post);
+    const saved = creator.save();
     res.status(201).json({
       message: 'Post created successfully!',
       post: post,
       creator:{_id: creator._id, name: creator.username}
     });
-  })
-  .catch(e=>{
-    if(!e.statusCode)
-      e.statusCode = 500;
-    next(e);
-  })
+  } catch (e) {
+    if(!e) e.statusCode = 500;
+    next(e);  
+  }
 };
 
 exports.getPost = (req, res, next)=>{
@@ -98,7 +86,7 @@ exports.getPost = (req, res, next)=>{
   })
 }
 
-exports.updatePost = (req,res,next)=>{
+exports.updatePost = async (req,res,next)=>{
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const error = new Error('Validation failed, entered data is incorrect');
@@ -120,45 +108,44 @@ exports.updatePost = (req,res,next)=>{
     throw error;
   }
 
-  Post.findById(postId)
-  .then(post=>{
+  try {
+    const post = await Post.findById(postId);
     if(!post){
       const error = new Error('Could not find post');
       error.statusCode = 422;
       throw error;  
     }
-
+  
     if(post.creator.toString() !== req.userId){
       const error = new Error('Unauthorized');
       error.statusCode = 422;
       throw error;  
     }
-
+  
     if(imageUrl !== post.imageUrl){
       clearImage(post.imageUrl);//delete the old image
     }
     post.title = title;
     post.content = content;
     post.imageUrl = imageUrl;
-
-    return post.save();
-  })
-  .then(result=>{
+  
+    const result = await post.save();
     res.status(200).json({message:"Post updated successfully", post:result});
-  })
-  .catch(e=>{
+      
+  } catch (e) {
     if(!e) e.statusCode = 500;
     next(e);
-  })
+  }
+
 }
 
-exports.deletePost = (req, res, next)=>{
+exports.deletePost = async (req, res, next)=>{
   const postId = req.params.postId;
 
-  Post.findById(postId)
-  .then(post=>{
+  try {
+    const post = await Post.findById(postId);
     if(post) clearImage(post.imageUrl);
-
+  
     if(!post){
       const error = new Error('Could not find post');
       error.statusCode = 422;
@@ -171,20 +158,19 @@ exports.deletePost = (req, res, next)=>{
       throw error;  
     }
     
-    return Post.findByIdAndRemove(postId);
-  })
-  .then(result=>{
-    return User.findById(req.userId);
-  })
-  .then(user=>{
+    const result = await Post.findByIdAndRemove(postId);
+    const user = await User.findById(req.userId);
     user.posts.pull(postId);
-    return user.save();
-  })
-  .then(result=>{
+    const response  = await user.save();
     res.status(200).json({message:"Post deleted successfully!"});
-  })
-  .catch(e=>{console.log(e)})
+      
+  } catch (e) {
+    if(!e) e.statusCode = 500;
+    next(e);  
+  }
+
 }
+
 const clearImage = filePath=>{
   filePath = path.join(__dirname, '..', filePath);
   fs.unlink(filePath, err=>{
