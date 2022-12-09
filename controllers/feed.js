@@ -11,6 +11,7 @@ exports.getPosts = async (req, res, next) => {
   try {
     const totalItems = await Post.find().countDocuments()
     const posts = await Post.find().populate('creator')
+    .sort({createAt:-1})//descending order
     .skip((currentPage - 1) * ITEMS_PER_PAGE)
     .limit(ITEMS_PER_PAGE);
   
@@ -114,14 +115,14 @@ exports.updatePost = async (req,res,next)=>{
   }
 
   try {
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate('creator');
     if(!post){
       const error = new Error('Could not find post');
       error.statusCode = 422;
       throw error;  
     }
   
-    if(post.creator.toString() !== req.userId){
+    if(post.creator._id.toString() !== req.userId){
       const error = new Error('Unauthorized');
       error.statusCode = 422;
       throw error;  
@@ -135,6 +136,9 @@ exports.updatePost = async (req,res,next)=>{
     post.imageUrl = imageUrl;
   
     const result = await post.save();
+
+    io.getIO().emit('posts',{ action:'update', post: result});
+  
     res.status(200).json({message:"Post updated successfully", post:result});
       
   } catch (e) {
@@ -166,7 +170,8 @@ exports.deletePost = async (req, res, next)=>{
     const result = await Post.findByIdAndRemove(postId);
     const user = await User.findById(req.userId);
     user.posts.pull(postId);
-    const response  = await user.save();
+    await user.save();
+    io.getIO().emit('posts', {action:'delete', post:postId});
     res.status(200).json({message:"Post deleted successfully!"});
       
   } catch (e) {
