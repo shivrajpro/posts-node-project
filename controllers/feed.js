@@ -3,7 +3,7 @@ const Post = require('../models/post');
 const fs = require('fs');
 const path = require('path');
 const User = require('../models/user');
-
+const io = require('../socket');
 exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
   const ITEMS_PER_PAGE = 2;
@@ -52,11 +52,16 @@ exports.createPost = async (req, res, next) => {
   // Create post in db
 
   try {
-    const result = await post.save();
+    await post.save();
     const creator = await User.findById(req.userId);
   
     creator.posts.push(post);
-    const saved = creator.save();
+    await creator.save();
+
+    io.getIO().emit('posts',{ action:'create', post:{...post._doc,
+    creator:{_id:req.userId, name:creator.username}
+    } });
+
     res.status(201).json({
       message: 'Post created successfully!',
       post: post,

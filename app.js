@@ -55,5 +55,9 @@ app.use((err, req, res, next)=>{
 mongoose.connect('mongodb+srv://shivraj:shiv@cluster0.bu9ow60.mongodb.net/posts')
 .then(result=>{
     console.log('CONNECTED');
-    app.listen(8080);
+    const server = app.listen(8080);
+    const io = require('./socket').init(server);
+    io.on('connection', socket=>{
+      console.log('WEB SOCKET CONNECTED');
+    })
 }).catch(e=> console.log(e))
