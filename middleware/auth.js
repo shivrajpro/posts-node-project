@@ -7,24 +7,30 @@ function throwError() {
 }
 module.exports = (req, res, next)=>{
     const authHeader = req.get('Authorization');
-    const token = authHeader.split(' ')[1];
-
     if(!authHeader){
-        throwError();
+        // throwError();
+        req.isAuth = false;
+        return next();
     }
+
+    const token = authHeader.split(' ')[1]; //"Bearer token"
+
     let decodedToken;
 
     try{
         decodedToken = jwt.verify(token, 'somesupersecretsecret')
     }catch(e){
-        e.statusCode = 500;
-        throw e;
+        req.isAuth = false;
+        return next();
     }
 
     if(!decodedToken){
-        throwError();
+        // throwError();
+        req.isAuth = false;
+        return next();
     }
 
     req.userId = decodedToken.userId;
+    req.isAuth = true;
     next()
 }

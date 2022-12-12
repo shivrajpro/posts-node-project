@@ -5,6 +5,7 @@ const { graphqlHTTP } = require('express-graphql');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
 
+const auth = require('./middleware/auth');
 const mongoose = require('mongoose');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -46,6 +47,7 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 
 app.use(multer({storage: fileStorage, fileFilter}).single('image'));
 
+app.use(auth);
 app.use('/graphql', graphqlHTTP({
   schema: graphqlSchema,
   rootValue: graphqlResolver,
