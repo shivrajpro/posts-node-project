@@ -42,10 +42,10 @@ app.use((req, res, next) => {
 
 app.use(multer({storage: fileStorage, fileFilter}).single('image'));
 
-
 app.use('/graphql', graphqlHTTP({
   schema: graphqlSchema,
-  rootValue: graphqlResolver
+  rootValue: graphqlResolver,
+  graphiql: true
 }))
 app.use((err, req, res, next)=>{
     console.log(err);
