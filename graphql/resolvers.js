@@ -12,7 +12,7 @@ module.exports = {
     }
 
     if(validator.isEmpty(userInput.password) ||
-        !validator.isLength({min:5})
+        !validator.isLength(userInput.password, {min:5})
     ){
         errors.push({message: "Password must contain atleast 5 characters"})
     }
