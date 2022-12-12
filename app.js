@@ -1,6 +1,9 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require("multer");
+const { graphqlHTTP } = require('express-graphql');
+const graphqlSchema = require('./graphql/schema');
+const graphqlResolver = require('./graphql/resolvers');
 
 const mongoose = require('mongoose');
 const path = require('path');
@@ -39,6 +42,11 @@ app.use((req, res, next) => {
 
 app.use(multer({storage: fileStorage, fileFilter}).single('image'));
 
+
+app.use('/graphql', graphqlHTTP({
+  schema: graphqlSchema,
+  rootValue: graphqlResolver
+}))
 app.use((err, req, res, next)=>{
     console.log(err);
     const status = err.statusCode || 500;
