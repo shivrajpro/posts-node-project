@@ -2,9 +2,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require("multer");
 
-const feedRoutes = require('./routes/feed');
-const authRoutes = require('./routes/auth');
-
 const mongoose = require('mongoose');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -41,8 +38,6 @@ app.use((req, res, next) => {
 });
 
 app.use(multer({storage: fileStorage, fileFilter}).single('image'));
-app.use('/feed', feedRoutes);
-app.use('/auth', authRoutes);
 
 app.use((err, req, res, next)=>{
     console.log(err);
@@ -55,9 +50,5 @@ app.use((err, req, res, next)=>{
 mongoose.connect('mongodb+srv://shivraj:shiv@cluster0.bu9ow60.mongodb.net/posts')
 .then(result=>{
     console.log('CONNECTED');
-    const server = app.listen(8080);
-    const io = require('./socket').init(server);
-    io.on('connection', socket=>{
-      console.log('WEB SOCKET CONNECTED');
-    })
+    app.listen(8080);
 }).catch(e=> console.log(e))
