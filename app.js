@@ -8,7 +8,7 @@ const graphqlResolver = require('./graphql/resolvers');
 const mongoose = require('mongoose');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-
+const cors = require('cors');
 const app = express();
 const fileFilter = (req, file, cb) => {
     if (
@@ -30,15 +30,19 @@ const fileStorage = multer.diskStorage({
     }
 });
 // app.use(bodyParser.urlencoded()); // x-www-form-urlencoded <form>
+app.use(cors());
 app.use(bodyParser.json()); // application/json
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-});
+// app.use((req, res, next) => {
+//     res.setHeader('Access-Control-Allow-Origin', '*');
+//     res.setHeader('Access-Control-Allow-Methods', 'OPTIONS, GET, POST, PUT, PATCH, DELETE');
+//     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+//     if(req.method === 'OPTIONS')
+//       res.sendStatus(200);
+//     next();
+// });
 
 app.use(multer({storage: fileStorage, fileFilter}).single('image'));
 
@@ -46,7 +50,7 @@ app.use('/graphql', graphqlHTTP({
   schema: graphqlSchema,
   rootValue: graphqlResolver,
   graphiql: true,
-  formatError(err){
+  customFormatErrorFn(err){
     if(!err.originalError)
       return err;
     
