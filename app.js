@@ -1,12 +1,11 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require("multer");
-const fs = require('fs');
 
 const { graphqlHTTP } = require('express-graphql');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
-
+const { clearImage } = require('./util/file');
 const auth = require('./middleware/auth');
 const mongoose = require('mongoose');
 const path = require('path');
@@ -90,11 +89,3 @@ mongoose.connect('mongodb+srv://shivraj:shiv@cluster0.bu9ow60.mongodb.net/posts'
     console.log('CONNECTED');
     app.listen(8080);
 }).catch(e=> console.log(e))
-
-
-const clearImage = filePath=>{
-  filePath = path.join(__dirname, '..', filePath);
-  fs.unlink(filePath, err=>{
-    console.log(err);
-  })
-}

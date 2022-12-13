@@ -3,6 +3,7 @@ const User = require("../models/user");
 const Post = require("../models/post");
 const validator = require("validator");
 const jwt = require('jsonwebtoken');
+const { clearImage } = require('../util/file');
 
 module.exports = {
   createUser: async function ({ userInput }, req) {
@@ -213,6 +214,30 @@ module.exports = {
       createdAt: updatedPost.createdAt.toISOString(),
       updatedAt: updatedPost.updatedAt.toISOString()     
     }
+  },
+
+  deletePost: async function ({id}, req) {
+    checkAuth(req.isAuth);
+    
+    const post = await Post.findById(id);
+    if(!post){
+      const error = new Error('No post found!');
+      error.code = 404;
+      throw error;
+    }
+    
+    if(post.creator.toString() !== req.userId.toString()){
+      throw new Error("Unauthorized");
+    }
+   
+    clearImage(post.imageUrl);
+    await Post.findByIdAndRemove(id);
+
+    const user = await User.findById(req.userId);
+    user.posts.pull(id);
+    await user.save();
+
+    return true;
   }
 };
 
