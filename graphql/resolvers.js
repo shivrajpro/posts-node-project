@@ -70,13 +70,8 @@ module.exports = {
   },
 
   createPost: async function ({postInput}, req) {
+    checkAuth(req.isAuth);
 
-    if(!req.isAuth){
-      const error = new Error("Unauthorized");
-      error.code = 401;
-      throw error;
-    }
-    
     const user = await User.findById(req.userId);
     
     if(!user){
@@ -127,11 +122,7 @@ module.exports = {
   },
 
   posts: async function ({page}, req) {
-    if(!req.isAuth){
-      const error = new Error("Unauthorized");
-      error.code = 401;
-      throw error;
-    }
+    checkAuth(req.isAuth);
 
     if(!page){
       page = 1;
@@ -153,5 +144,82 @@ module.exports = {
         upadtedAt: p.updatedAt.toISOString()
       }
     }), totalPosts: totalPosts }
+  },
+
+  post: async function ({id}, req) {
+    checkAuth(req.isAuth);
+    
+    const post = await Post.findById(id).populate('creator');
+
+    if(!post){
+      const error = new Error('No post found!');
+      error.code = 404;
+      throw error;
+    }
+
+    return {
+      ...post._doc,
+      _id:post._id.toString(),
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
+    }
+  },
+
+  updatePost: async function ({id, postInput}, req) {
+    checkAuth(req.isAuth);
+    
+    const post = await Post.findById(id).populate('creator');
+    if(!post){
+      const error = new Error('No post found!');
+      error.code = 404;
+      throw error;
+    }
+    
+    if(post.creator._id.toString() !== req.userId.toString()){
+      throw new Error("Unauthorized");
+    }
+
+    const errors = [];
+
+    if(validator.isEmpty(postInput.title) ||
+        !validator.isLength(postInput.title, {min:5})
+    ){
+        errors.push({message: "Title is invalid"})
+    }
+
+    if(validator.isEmpty(postInput.content) ||
+        !validator.isLength(postInput.content, {min:5})
+    ){
+        errors.push({message: "Content is invalid"})
+    }
+
+    if(errors.length){
+        const error = new Error('Invalid Input');
+        error.data = errors;
+        error.code = 422;
+        throw error;
+    }
+    
+    post.title = postInput.title;
+    post.content = postInput.content;
+    if(postInput.imageUrl !== 'undefined'){
+      post.imageUrl = postInput.imageUrl;
+    }
+
+    const updatedPost = await post.save();
+    return { 
+      ...this.updatePost._doc,
+      _id: updatedPost._id.toString(),
+      createdAt: updatedPost.createdAt.toISOString(),
+      updatedAt: updatedPost.updatedAt.toISOString()     
+    }
   }
 };
+
+checkAuth = (isAuth)=>{
+  if(!isAuth){
+    const error = new Error("Unauthorized");
+    error.code = 401;
+    throw error;
+  }  
+}

@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require("multer");
+const fs = require('fs');
+
 const { graphqlHTTP } = require('express-graphql');
 const graphqlSchema = require('./graphql/schema');
 const graphqlResolver = require('./graphql/resolvers');
@@ -46,8 +48,20 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 // });
 
 app.use(multer({storage: fileStorage, fileFilter}).single('image'));
-
 app.use(auth);
+
+app.put('/post-image', (req, res, next)=>{
+  if(!req.isAuth)
+    throw new Error('Unauthorized request');
+
+  if(!req.file)
+    return res.status(200).json({message:"No file provided!"});
+  
+  if(req.body.oldPath)
+    clearImage(req.body.oldPath)
+
+  return res.status(201).json({message:"File Stored", filePath:req.file.path})
+})
 app.use('/graphql', graphqlHTTP({
   schema: graphqlSchema,
   rootValue: graphqlResolver,
@@ -76,3 +90,11 @@ mongoose.connect('mongodb+srv://shivraj:shiv@cluster0.bu9ow60.mongodb.net/posts'
     console.log('CONNECTED');
     app.listen(8080);
 }).catch(e=> console.log(e))
+
+
+const clearImage = filePath=>{
+  filePath = path.join(__dirname, '..', filePath);
+  fs.unlink(filePath, err=>{
+    console.log(err);
+  })
+}
