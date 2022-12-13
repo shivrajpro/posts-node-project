@@ -124,5 +124,34 @@ module.exports = {
       createdAt: createdPost.createdAt.toISOString(),
       updatedAt: createdPost.updatedAt.toISOString()
     }
+  },
+
+  posts: async function ({page}, req) {
+    if(!req.isAuth){
+      const error = new Error("Unauthorized");
+      error.code = 401;
+      throw error;
+    }
+
+    if(!page){
+      page = 1;
+    }
+  
+    const ITEMS_PER_PAGE = 2;
+    const totalPosts = await Post.find().countDocuments();
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * ITEMS_PER_PAGE)
+      .limit(ITEMS_PER_PAGE)
+      .populate("creator");
+
+    return { posts:posts.map(p=>{
+      return {
+        ...p._doc,
+        _id: p._id.toString(),
+        createdAt: p.createdAt.toISOString(),
+        upadtedAt: p.updatedAt.toISOString()
+      }
+    }), totalPosts: totalPosts }
   }
 };
