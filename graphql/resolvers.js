@@ -238,6 +238,28 @@ module.exports = {
     await user.save();
 
     return true;
+  },
+
+  user: async function (args, req) {
+    checkAuth(req.isAuth);
+
+    const user = await User.findById(req.userId);
+    if(!user) throw new Error("No user found");
+    
+    return {...user._doc, _id:user._id.toString()}
+  },
+
+  updateStatus: async function ({status}, req) {
+    checkAuth(req.isAuth);
+
+    const user  = await User.findById(req.userId);
+    if(!user) throw new Error("User not found");
+
+    user.status = status;
+
+    await user.save();
+
+    return {...user._doc, _id: user._id.toString()}
   }
 };
 
